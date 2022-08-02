@@ -2,12 +2,13 @@ from transscale.strategies.ReconfigurationStrategy import BaseReconfigurationStr
 from transscale.components.RuntimeContext import RuntimeContext
 from transscale.utils.Config import Config
 from transscale.utils.DefaultValues import DefaultValues
+from transscale.utils.Logger import Logger
 
 
 class ParallelismPriority(BaseReconfigurationStrategy):
 
-    def __init__(self, conf: Config):
-        super(ParallelismPriority, self).__init__(conf)
+    def __init__(self, conf: Config, log: Logger):
+        super(ParallelismPriority, self).__init__(conf, log)
         self.strategy_name = "PARALLELISM PRIORITY"
         self.strategy_optimization = DefaultValues.Scaling.Strategy.ScaleUpOptimization.DEFAULT
 
@@ -24,5 +25,5 @@ class ParallelismPriority(BaseReconfigurationStrategy):
             return {"method": DefaultValues.Scaling.SCALE_PAR}
 
 
-def init_strategy(conf: Config) -> BaseReconfigurationStrategy:
-    return ParallelismPriority(conf)
+def init_strategy(conf: Config, log: Logger) -> BaseReconfigurationStrategy:
+    return ParallelismPriority(conf, log)

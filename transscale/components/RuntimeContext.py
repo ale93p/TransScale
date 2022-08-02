@@ -2,6 +2,7 @@ from typing import Tuple
 import requests as req
 from transscale.utils.Config import Config
 from transscale.utils.DefaultValues import ConfigKeys as Key
+from transscale.utils.Logger import Logger
 
 
 class RuntimeState:
@@ -21,7 +22,7 @@ class RuntimeState:
 
 class RuntimeContext:
 
-    def __init__(self, conf: Config):
+    def __init__(self, conf: Config, log: Logger):
         self.__job_id = None
         self.__operator_id = None
         self.__operator_name = None
@@ -51,28 +52,26 @@ class RuntimeContext:
         self.__jobs_url = f"{self.__cluster_url}/jobs"
 
         self.__debug = int(conf.get(Key.DEBUG_LEVEL))
+        self.__log = log
 
     def __get_current_job_runtime(self):
         return req.get(self.__job_url).json()["duration"]
 
     def __get_current_backpressure(self) -> int:
-        if self.__debug > 0:
-            print(f"[DEBUG]\tGetting source backpressure from url {self.__source_backpressure_url}")
+        self.__log.debug(f"\tGetting source backpressure from url {self.__source_backpressure_url}")
         bp = int(req.get(self.__source_backpressure_url).json()["subtasks"][0]["ratio"])
         return 0 if bp is None else bp
 
     def __get_current_source_throughput(self) -> int:
-        if self.__debug > 0:
-            print(f"[DEBUG]\tGetting source throughput from url {self.__source_tput_url}")
+        self.__log.debug(f"\tGetting source throughput from url {self.__source_tput_url}")
         return int(float(req.get(self.__source_tput_url).json()[0]["value"]))
 
     def __get_current_operator_throughput(self) -> int:
-        if self.__debug > 0:
-            print(f"[DEBUG]\tGetting operator throughput from url {self.__operator_tput_url}")
+        self.__log.debug(f"\tGetting operator throughput from url {self.__operator_tput_url}")
         return int(float(req.get(self.__operator_tput_url).json()[0]["sum"]))
 
     def update_job_details(self) -> None:
-        print(f"[MONITOR]: Retrieving job details from {self.__cluster_ip} ...")
+        self.__log.info(f"[MONITOR]: Retrieving job details from {self.__cluster_ip} ...")
 
         self.__job_id = req.get(self.__jobs_url).json()["jobs"][0]["id"]
         self.__job_url = f"{self.__jobs_url}/{self.__job_id}"
@@ -96,30 +95,28 @@ class RuntimeContext:
 
     def update_state(self) -> None:
         try:
-            if self.__debug > 0:
-                print(f"[DEBUG]\tGetting operator parallelism from url {self.__job_url}")
+            self.__log.debug(f"\tGetting operator parallelism from url {self.__job_url}")
             operator_res = req.get(self.__job_url).json()["vertices"][1]
             self.__current_state.parallelism = int(operator_res["parallelism"])
         except IndexError:
-            print(f"[MONITOR] ERROR: Unable to retrieve parallelism, setting it to 0")
+            self.__log.info(f"[MONITOR] ERROR: Unable to retrieve parallelism, setting it to 0")
             self.__current_state.parallelism = 0
 
         try:
-            if self.__debug > 0:
-                print(f"[DEBUG]\tGetting operator transprecision from url {self.__transprecision_url}")
+            self.__log.debug(f"\tGetting operator transprecision from url {self.__transprecision_url}")
             transp_res = req.get(self.__transprecision_url).json()[0]
             self.__current_state.transprecision = int(transp_res["value"])
         except IndexError:
-            print(f"[MONITOR] ERROR: Unable to retrieve transprecision, setting it to 0")
+            self.__log.error(f"[MONITOR] Unable to retrieve transprecision, setting it to 0")
             self.__current_state.transprecision = 0
 
     def print_details(self) -> None:
-        print(f"[MONITOR]:: Details about the job:")
-        print(f"\t Job ID: {self.__job_id}")
-        print(f"\t Target Operator ID: {self.__operator_id}")
-        print(f"\t Target Operator Name: {self.__operator_name}")
-        print(f"\t Target Operator Parallelism: {self.__current_state.parallelism}")
-        print(f"\t Target Operator Transprecision: {self.__current_state.transprecision}")
+        self.__log.info(f"[MONITOR]:: Details about the job:")
+        self.__log.info(f"\t Job ID: {self.__job_id}")
+        self.__log.info(f"\t Target Operator ID: {self.__operator_id}")
+        self.__log.info(f"\t Target Operator Name: {self.__operator_name}")
+        self.__log.info(f"\t Target Operator Parallelism: {self.__current_state.parallelism}")
+        self.__log.info(f"\t Target Operator Transprecision: {self.__current_state.transprecision}")
 
     def update_job_runtime_metrics(self) -> None:
         self.__job_runtime = self.__get_current_job_runtime()
@@ -132,10 +129,10 @@ class RuntimeContext:
         self.__target_state.transprecision = transp
 
     def print_job_runtime_metrics(self) -> None:
-        print(f"[MONITOR]:: Runtime performance metrics:")
-        print(f"\t Job Run Time: {self.__job_runtime} ms")
-        print(f"\t Source Backpressure Ratio: {self.__backpressure}")
-        print(f"\t Source Input Ratio: {self.__source_throughput}")
+        self.__log.info(f"[MONITOR]:: Runtime performance metrics:")
+        self.__log.info(f"\t Job Run Time: {self.__job_runtime} ms")
+        self.__log.info(f"\t Source Backpressure Ratio: {self.__backpressure}")
+        self.__log.info(f"\t Source Input Ratio: {self.__source_throughput}")
 
     def get_current_state(self) -> Tuple[int, int]:
         return self.__current_state.parallelism, self.__current_state.transprecision

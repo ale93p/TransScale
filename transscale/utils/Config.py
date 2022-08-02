@@ -4,10 +4,13 @@ from os import getcwd
 
 
 # TODO add config file from where to read configurations
+from transscale.utils.Logger import Logger
+
+
 class Config:
     __config = {}
 
-    def __init__(self, conf_path: str = None):
+    def __init__(self, log: Logger, conf_path: str = None):
         self.__config[Key.MONITORING_INTERVAL] = Value.System.Monitoring.interval
         self.__config[Key.MONITORING_WARMUP] = Value.System.Monitoring.warmup
         self.__config[Key.MAX_PAR] = Value.System.Environment.max_par
@@ -33,7 +36,9 @@ class Config:
 
         if conf_path is None or not exists(conf_path):
             conf_path = join(getcwd(), Value.System.CONF_PATH)
-        self.__init(conf_path)
+        self.__read_config_file(conf_path)
+
+        self.__log = log
 
     def get(self, key) -> any:
         if key in self.__config:
@@ -51,7 +56,7 @@ class Config:
     def set(self, key, value):
         self.__config[key] = value
 
-    def __init(self, conf_path: str):
+    def __read_config_file(self, conf_path: str):
         if exists(conf_path):
 
             import configparser as cp
@@ -68,6 +73,6 @@ class Config:
                 if key in self.__config:
                     self.__config[key] = conf[key]
                 else:
-                    print(f"[CONF] Error: specified key \"{key}\" does not exist")
+                    self.__log.error(f"[CONF] Specified key \"{key}\" does not exist")
         else:
-            print(f"[CONF] Warning: no configuration file found")
+            self.__log.warning(f"[CONF] No configuration file found")

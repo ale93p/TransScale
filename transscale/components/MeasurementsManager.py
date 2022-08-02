@@ -4,14 +4,17 @@ from transscale.utils.Config import Config
 from transscale.utils.DefaultValues import ConfigKeys as Key
 import traceback
 
+from transscale.utils.Logger import Logger
+
 
 class MeasurementsManager:
 
-    def __init__(self, conf: Config):
+    def __init__(self, conf: Config, log: Logger):
         self.__mst_by_par = zeros([conf.get_int(Key.MAX_PAR) + 1, conf.get_int(Key.MAX_TRANSP) + 1])
         self.__mst_by_transp = self.__mst_by_par.transpose()
         self.__ndmax = zeros([conf.get_int(Key.MAX_PAR) + 1])
         self.__debug = conf.get(Key.DEBUG_LEVEL)
+        self.__log = log
 
     def get_measurements(self, par: int = None, transp: int = None) -> int | list[int]:
         if par and transp:
@@ -47,10 +50,10 @@ class MeasurementsManager:
             self.__mst_by_par[par, transp] = mst
             self.__mst_by_transp[transp, par] = mst
         except IndexError as err:
-            print(traceback.format_exception(None, err, err.__traceback__))
-            print("par is", par, "type", type(par))
-            print("transp is", transp, "type", type(transp))
-            print("mst is", mst, "type", type(mst))
+            self.__log.error(str(traceback.format_exception(None, err, err.__traceback__)))
+            self.__log.info(f"par is {par} type {type(par)}")
+            self.__log.info(f"par is {transp} type {type(transp)}")
+            self.__log.info(f"par is {mst} type {type(mst)}")
             quit(-1)
 
     def update_nd(self, context: RuntimeContext, nd_max: int) -> None:

@@ -11,23 +11,25 @@ from transscale.utils.Config import Config
 from transscale.utils.DefaultValues import DefaultValues, ConfigKeys as Key
 
 import transscale.strategies.ReconfigurationStrategy as rs
+from transscale.utils.Logger import Logger
 
 script_name = "TRANSSCALE"
 
-print(f"{script_name}:: Starting auto-scaler...")
-print()
+log = Logger()
+log.info(f"{script_name}:: Starting auto-scaler...\n")
 
-config = Config("conf/transscale.conf")
+config = Config(log, "conf/transscale.conf")
 debug = int(config.get(Key.DEBUG_LEVEL))
+log.set_debug_level(debug)
 
-measurements = MeasurementsManager(config)
-reconf_manager = ReconfigurationManager(config)
-resource_manager = ResourceManager(config)
+measurements = MeasurementsManager(config, log)
+reconf_manager = ReconfigurationManager(config, log)
+resource_manager = ResourceManager(config, log)
 
-par_contr = ParallelismController(config)
-transp_contr = TransprecisionController(config)
+par_contr = ParallelismController(config, log)
+transp_contr = TransprecisionController(config, log)
 
-context = RuntimeContext(config)
+context = RuntimeContext(config, log)
 
 running = True
 
@@ -36,9 +38,9 @@ context.update_state()
 context.print_details()
 
 while running:  # main loop, find a way to break it
-    print("\n*******************************************************")
+    log.info("\n*******************************************************")
     if debug < 2:
-        print(f"Warming up for {config.get(Key.MONITORING_WARMUP)} seconds")
+        log.info(f"Warming up for {config.get(Key.MONITORING_WARMUP)} seconds")
         sleep(config.get_int(Key.MONITORING_WARMUP))
 
     # get it inside loop because after parallelism reconfiguration
@@ -47,14 +49,14 @@ while running:  # main loop, find a way to break it
     context.update_state()
     context.print_details()
 
-    print(f"{script_name}:: Monitoring the throughput and back pressure every "
-          f"{config.get(Key.MONITORING_INTERVAL)} seconds...")
+    log.info(f"{script_name}:: Monitoring the throughput and back pressure every "
+            f"{config.get(Key.MONITORING_INTERVAL)} seconds...")
 
     reconfigured = False
 
     while running and not reconfigured:  # monitoring loop
         sleep(config.get_int(Key.MONITORING_INTERVAL))
-        print(f"\n{script_name}:: Periodic Monitoring...")
+        log.info(f"\n{script_name}:: Periodic Monitoring...")
 
         context.update_job_runtime_metrics()
         context.print_job_runtime_metrics()
@@ -69,10 +71,10 @@ while running:  # main loop, find a way to break it
         input_rate = context.get_source_input_rate()
 
         if input_rate == 0:
-            print("No data detected. Should stop the monitoring?")
+            log.warning("No data detected. Should stop the monitoring?")
 
         elif backpressure_ratio_percent <= 50:
-            print("\t Backpressure level is NOT HIGH")
+            log.info("\t Backpressure level is NOT HIGH")
 
             reconf_mode = reconf_manager.get_scaledown_params(context)[rs.RSP_METHOD]
 
@@ -89,12 +91,10 @@ while running:  # main loop, find a way to break it
                 )
 
         else:
-            print("""\n
-            ***************************************************************
-            *     Warning :: Back Pressure Level of Source is HIGH!!      *
-            ***************************************************************
-            """)
-            print(f"Waiting to check again the backpressure after {config.get(Key.MONITORING_INTERVAL)} seconds...")
+            log.new_line()
+            log.warning("Warning :: Back Pressure Level of Source is HIGH!!")
+
+            log.info(f"Waiting to check again the backpressure after {config.get(Key.MONITORING_INTERVAL)} seconds...")
             sleep(config.get_int(Key.MONITORING_INTERVAL))
 
             context.update_job_runtime_metrics()
@@ -105,7 +105,7 @@ while running:  # main loop, find a way to break it
             backpressure_ratio_percent = source_backpressure_ratio * 100
 
             if backpressure_ratio_percent > 50:
-                print("Backpressure is still high and the system needs a reconfiguration...")
+                log.info("Backpressure is still high and the system needs a reconfiguration...")
 
                 # context.update_job_runtime_metrics()
                 current_tput = context.get_operator_throughput()
@@ -120,9 +120,8 @@ while running:  # main loop, find a way to break it
 
                 reconf_optimization = reconf_manager.get_scaling_optimization()
 
-                if debug > 0:
-                    print(f"[DEBUG]\t Scale params: {scale_params}")
-                    print(f"[DEBUG]\t Optimization: {reconf_optimization}")
+                log.debug(f"[DEBUG]\t Scale params: {scale_params}")
+                log.debug(f"[DEBUG]\t Optimization: {reconf_optimization}")
 
                 measurements.update_mst(context)
                 nd_max = resource_manager.get_max_network_delay(context.get_current_par())
@@ -143,29 +142,31 @@ while running:  # main loop, find a way to break it
                     )
 
             else:
-                print("Backpressure re-stabilized: no re-configuration needed")
+                log.info("Backpressure re-stabilized: no re-configuration needed")
 
-        if debug > 1:
-            print(f"[DEBUG]\t\t PAR -- current {context.get_current_par()} -- target {context.get_target_par()} "
-                  f"-- reconf {context.get_current_par() != context.get_target_par()}")
-            print(f"[DEBUG]\t\t TRANSP -- current {context.get_current_transp()} -- target {context.get_target_transp()} "
-                  f"-- reconf {context.get_current_transp() != context.get_target_transp()}")
-            print(f"[DEBUG]\t\t CTX -- reconf {context.is_reconf_required()} "
-                  f"-- par {context.is_reconf_par()} -- transp {context.is_reconf_transp()}")
+        log.debugg(
+            f"\t\t PAR -- current {context.get_current_par()} -- target {context.get_target_par()} "
+            f"-- reconf {context.get_current_par() != context.get_target_par()}")
+        log.debugg(
+            f"\t\t TRANSP -- current {context.get_current_transp()} -- target {context.get_target_transp()} "
+            f"-- reconf {context.get_current_transp() != context.get_target_transp()}")
+        log.debugg(
+            f"\t\t CTX -- reconf {context.is_reconf_required()} "
+            f"-- par {context.is_reconf_par()} -- transp {context.is_reconf_transp()}")
 
         if context.is_reconf_required():
-            print()
+            log.new_line()
             if context.is_reconf_par():
                 if not resource_manager.rescale_parallelism(context):
-                    print()
-                    print(f"{script_name}:: Error reconfiguring: closing auto-scaler")
+                    log.new_line()
+                    log.info(f"{script_name}:: Error reconfiguring: closing auto-scaler")
                     running = False
                 else:
                     context.update_job_details()
 
             if context.is_reconf_transp():
                 if not resource_manager.rescale_transprecision(context):
-                    print(f"{script_name}:: Error reconfiguring: closing auto-scaler")
+                    log.info(f"{script_name}:: Error reconfiguring: closing auto-scaler")
                     running = False
 
             reconfigured = True
