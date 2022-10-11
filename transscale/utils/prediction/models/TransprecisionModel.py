@@ -2,7 +2,7 @@ from .PerformanceModel import BasePerformanceModel
 
 from scipy.optimize import curve_fit
 
-from ...utils.Logger import Logger
+from transscale.utils.Logger import Logger
 
 
 class TransprecisionModel(BasePerformanceModel):

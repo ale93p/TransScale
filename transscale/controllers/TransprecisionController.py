@@ -1,4 +1,4 @@
-from .models.TransprecisionModel import TransprecisionModel
+from transscale.utils.prediction.models.TransprecisionModel import TransprecisionModel
 from transscale.components.MeasurementsManager import MeasurementsManager
 from transscale.components.RuntimeContext import RuntimeContext
 from ..utils.Config import Config
@@ -62,7 +62,8 @@ class TransprecisionController:
         self.__log.info("\n[TRANSP_CTRL] Reconf Transprecision: Scale Down")
 
         transp = context.get_current_transp()
-        operator_throughput = context.get_operator_throughput()
+        operator_throughput = convert_throughput(context, DefaultValues.Scaling.Transprecision.SAMPLING_DIRECT,
+                                                 context.get_operator_throughput())
 
         ignored = False
         num_measurements = measurements.get_measurements_num_transp(context.get_current_par())

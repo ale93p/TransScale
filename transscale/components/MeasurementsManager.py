@@ -1,4 +1,4 @@
-from numpy import zeros
+from numpy import zeros, ndarray
 from transscale.components.RuntimeContext import RuntimeContext
 from transscale.utils.Config import Config
 from transscale.utils.DefaultValues import ConfigKeys as Key
@@ -16,7 +16,7 @@ class MeasurementsManager:
         self.__debug = conf.get(Key.DEBUG_LEVEL)
         self.__log = log
 
-    def get_measurements(self, par: int = None, transp: int = None) -> int | list[int]:
+    def get_measurements(self, par: int = None, transp: int = None) -> int | list[int] | ndarray:
         if par and transp:
             return self.__mst_by_par[par, transp]
         elif par and not transp:
@@ -24,7 +24,7 @@ class MeasurementsManager:
         elif not par and transp:
             return self.__mst_by_transp[transp]
         else:
-            raise ValueError("At least one of the parameters must be defined")
+            return self.__mst_by_par
 
     # Called by the parallelism controller
     # Returns the number of measurements at different parallelism levels for the current transp level

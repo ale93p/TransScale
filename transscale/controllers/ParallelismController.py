@@ -1,4 +1,4 @@
-from .models.ParallelismModel import ParallelismModel
+from transscale.utils.prediction.models.ParallelismModel import ParallelismModel
 from transscale.components.MeasurementsManager import MeasurementsManager
 from transscale.components.ResourceManager import ResourceManager
 from transscale.components.RuntimeContext import RuntimeContext
@@ -26,7 +26,7 @@ class ParallelismController:
 
         network_distance = measurements.get_network_distance()
 
-        if optimization == DefaultValues.Scaling.Strategy.ScaleUpOptimization.DEFAULT:
+        if optimization == DefaultValues.Scaling.Strategy.ScaleOptimization.DEFAULT:
 
             self.__log.info("[PAR_CTRL] Scale up strategy: Default")
 
@@ -51,7 +51,7 @@ class ParallelismController:
 
                 target_par = par + 1
 
-        elif optimization == DefaultValues.Scaling.Strategy.ScaleUpOptimization.CUSTOM_OPTIMIZATION:
+        elif optimization == DefaultValues.Scaling.Strategy.ScaleOptimization.CUSTOM_OPTIMIZATION:
             from math import ceil
 
             self.__log.info("[PAR_CTRL] Scale up strategy: Custom Optimization")

@@ -12,6 +12,7 @@ class ConfigKeys:
     SCALING_METHOD = "scaling.transprecision.method"
     TPUT_THRESHOLD_TRANSP = "scaling.transprecision.threshold"
     TPUT_THRESHOLD_PAR = "scaling.parallelism.threshold"
+    TPUT_THRESHOLD_COMBO = "scaling.combined.threshold"
 
     FLINK_HOST = "flink.host"
     FLINK_PORT = "flink.port"
@@ -50,14 +51,15 @@ class DefaultValues:
 
         SCALE_PAR = 0
         SCALE_TRANSP = 1
+        COMBO_SCALE = 2
 
         class Strategy:
-            class ScaleUpOptimization:
-                DEFAULT = "default"
-                CUSTOM_OPTIMIZATION = "custom"
+            class ScaleOptimization:
+                SINGLE_CONTROLLER = False
+                PREDICTION_MATRIX = True
 
             module = "transscale.strategies.ParallelismOnly"
-            optimization_method = ScaleUpOptimization.DEFAULT
+            optimization_method = ScaleOptimization.SINGLE_CONTROLLER
 
         class Transprecision:
             SWITCH_BASE = "switching_base"
@@ -67,6 +69,9 @@ class DefaultValues:
             threshold = 15
 
         class Parallelism:
+            threshold = 30
+
+        class Combined:
             threshold = 30
 
     class Redis:

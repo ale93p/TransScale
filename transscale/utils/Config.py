@@ -11,6 +11,16 @@ class Config:
     __config = {}
 
     def __init__(self, log: Logger, conf_path: str = None):
+        self.__log = log
+        self.__init_defaults()
+
+        if conf_path is None or not exists(conf_path):
+            self.__log.warning(f"[CONFIG] Config file [{conf_path}] not specified or not existing.\n"
+                               f"\tUsing [{Value.System.CONF_PATH}] instead.")
+            conf_path = join(getcwd(), Value.System.CONF_PATH)
+        self.__read_config_file(conf_path)
+
+    def __init_defaults(self):
         self.__config[Key.MONITORING_INTERVAL] = Value.System.Monitoring.interval
         self.__config[Key.MONITORING_WARMUP] = Value.System.Monitoring.warmup
         self.__config[Key.MAX_PAR] = Value.System.Environment.max_par
@@ -21,6 +31,7 @@ class Config:
         self.__config[Key.SCALING_METHOD] = Value.Scaling.Transprecision.method
         self.__config[Key.TPUT_THRESHOLD_TRANSP] = Value.Scaling.Transprecision.threshold
         self.__config[Key.TPUT_THRESHOLD_PAR] = Value.Scaling.Parallelism.threshold
+        self.__config[Key.TPUT_THRESHOLD_COMBO] = Value.Scaling.Combined.threshold
 
         self.__config[Key.REDIS_HOME] = Value.Redis.home
         self.__config[Key.REDIS_DB] = Value.Redis.db_num
@@ -33,12 +44,6 @@ class Config:
         self.__config[Key.FLINK_JOB_PATH] = Value.Flink.job_path
 
         self.__config[Key.DEBUG_LEVEL] = Value.System.Debug.level
-
-        if conf_path is None or not exists(conf_path):
-            conf_path = join(getcwd(), Value.System.CONF_PATH)
-        self.__read_config_file(conf_path)
-
-        self.__log = log
 
     def get(self, key) -> any:
         if key in self.__config:

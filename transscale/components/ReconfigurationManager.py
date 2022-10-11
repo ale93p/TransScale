@@ -1,4 +1,4 @@
-from transscale.strategies.ReconfigurationStrategy import BaseReconfigurationStrategy
+from transscale.strategies.ReconfigurationStrategy import BaseReconfigurationStrategy, StrategyOptimization
 from transscale.utils.Config import Config
 from transscale.utils.DefaultValues import ConfigKeys as Key
 from transscale.components.RuntimeContext import RuntimeContext
@@ -15,13 +15,13 @@ class ReconfigurationManager:
         self.__log.debug("[RECONF_MNGR] Strategy imported")
         self.__reconf_strategy.print_status()
 
-    def get_scaleup_params(self, context: RuntimeContext) -> dict[str, int]:
-        return self.__reconf_strategy.scale_up(context)
+    def get_scaleup_target(self, possible_configurations: list, context: RuntimeContext) -> tuple[int, int]:
+        return self.__reconf_strategy.scale_up(possible_configurations, context)
 
-    def get_scaledown_params(self, context: RuntimeContext) -> dict[str, int]:
-        return self.__reconf_strategy.scale_down(context)
+    def get_scaledown_target(self, possible_configurations: list, context: RuntimeContext) -> tuple[int, int]:
+        return self.__reconf_strategy.scale_down(possible_configurations, context)
 
-    def get_scaling_optimization(self) -> str:
+    def get_scaling_optimization(self) -> StrategyOptimization:
         return self.__reconf_strategy.get_optimization()
 
 

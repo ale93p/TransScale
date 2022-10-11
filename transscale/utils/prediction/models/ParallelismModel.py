@@ -3,7 +3,7 @@ from .PerformanceModel import BasePerformanceModel
 from scipy.optimize import curve_fit
 from numpy import inf
 
-from ...utils.Logger import Logger
+from transscale.utils.Logger import Logger
 
 
 class ParallelismModel(BasePerformanceModel):
@@ -35,10 +35,6 @@ class ParallelismModel(BasePerformanceModel):
         par_data = [i for i in range(0, len(measurements_array)) if measurements_array[i] > 0]
         net_data = [network_array[i] for i in par_data]
         mst_data = [measurements_array[i] for i in par_data]
-
-        print(par_data)
-        print(net_data)
-        print(mst_data)
 
         popt, _ = curve_fit(lambda x, alpha, gamma: alpha * x[0] - gamma * x[1],
                             (par_data, net_data), mst_data, bounds=([0, 0], [inf, inf]))
