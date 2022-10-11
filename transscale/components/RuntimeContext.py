@@ -57,10 +57,10 @@ class RuntimeContext:
     def __get_current_job_runtime(self):
         return req.get(self.__job_url).json()["duration"]
 
-    def __get_current_backpressure(self) -> int:
+    def __get_current_backpressure(self) -> float:
         self.__log.debug(f"\tGetting source backpressure from url {self.__source_backpressure_url}")
-        bp = int(req.get(self.__source_backpressure_url).json()["subtasks"][0]["ratio"])
-        return 0 if bp is None else bp
+        bp = float(req.get(self.__source_backpressure_url).json()["subtasks"][0]["ratio"])
+        return 0.0 if bp is None else bp
 
     def __get_current_source_throughput(self) -> int:
         self.__log.debug(f"\tGetting source throughput from url {self.__source_tput_url}")
